@@ -1,183 +1,278 @@
+<!--
+DPBOSS-STYLE Site (Style 1) - Single file: index.html
+This file contains both the public site and a simple admin panel (client-side) that stores data in localStorage.
+
+Legal: This template does NOT include any real gambling/Matka market data. Add your own market names and results via the admin.
+
+How to use:
+1. Save this file as `index.html`.
+2. Open locally (double-click) to test or host on GitHub Pages/Netlify.
+   - GitHub Pages: put it in a repo named `yourusername.github.io` and upload index.html to the root.
+   - Netlify: drag-and-drop the folder with index.html.
+3. Open the site. Click Admin → Enter password `admin123` (you can change it in code). Use the admin to add/edit/delete markets.
+4. Export JSON from Admin or use "Download JSON" to save `data.json` for backups.
+
+Deploy: upload this as a single-file static site to GitHub Pages / Netlify / Vercel.
+-->
+
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ResultBoard — Live Results & Markets</title>
-<meta name="description" content="Original results board template — customize and publish for free."/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-  :root{--bg:#0b1220;--card:#0f1724;--accent:#ff7a59;--muted:#9fb0c8}
-  body{font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041028 0%, #07172a 100%);color:#e6f0fb;margin:0}
-  .wrap{max-width:1100px;margin:26px auto;padding:18px}
-  header{display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;gap:12px;align-items:center}
-  .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7b2bff);display:flex;align-items:center;justify-content:center;font-weight:700}
-  nav a{color:var(--muted);margin-left:14px;text-decoration:none;font-weight:600}
-  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:18px}
-  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-  .ticker{padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;gap:10px;overflow:auto}
-  .market{display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px dashed rgba(255,255,255,0.03)}
-  .market h4{margin:0}
-  .small{color:var(--muted);font-size:13px}
-  button.btn{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#fff;cursor:pointer}
-  .details{margin-top:10px}
-  pre.jsoneditor{background:#0b1226;color:#bfe0ff;padding:10px;border-radius:8px;max-height:220px;overflow:auto;font-size:13px}
-  footer{color:var(--muted);text-align:center;margin-top:18px}
-  @media(max-width:920px){.grid{grid-template-columns:1fr;}.aside{order:-1}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ResultBoard — DPBOSS Style (Style 1)</title>
+  <meta name="description" content="DPBOSS-style results board template. Add markets via Admin. No gambling data included." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#071126;--panel:#0e1b2b;--card:#0b1220;--accent:#ff7a59;--muted:#9fb0c8}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#031022 0%,#071129 100%);color:#e6f0fb;margin:0}
+    .wrap{max-width:1200px;margin:18px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#7b2bff);display:flex;align-items:center;justify-content:center;font-weight:800}
+    nav a{color:var(--muted);margin-left:14px;text-decoration:none;font-weight:600}
+
+    .grid{display:grid;grid-template-columns:720px 1fr;gap:18px;margin-top:18px}
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+    .ticker{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;gap:12px;overflow:auto}
+
+    .markets-list{margin-top:12px}
+    .market-row{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid rgba(255,255,255,0.02)}
+    .market-left{display:flex;flex-direction:column}
+    .market-name{font-weight:700;font-size:18px}
+    .market-meta{color:var(--muted);font-size:13px;margin-top:6px}
+    .market-result{font-weight:900;font-size:18px}
+
+    .btn{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#fff;cursor:pointer;font-weight:700}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+
+    .aside .card{padding:12px}
+    .controls{display:flex;gap:8px;align-items:center}
+
+    .result-big{font-weight:900;font-size:20px;letter-spacing:1px}
+    .small{color:var(--muted);font-size:13px}
+
+    footer{color:var(--muted);text-align:center;margin-top:18px}
+
+    /* Admin modal */
+    .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .modal-card{background:linear-gradient(180deg,#071126, #0b1226);padding:18px;border-radius:12px;max-width:880px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+    .form-row{display:flex;gap:8px;margin-top:8px}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+
+    @media(max-width:980px){.grid{grid-template-columns:1fr}.logo{width:48px;height:48px}}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="logo">RB</div>
-      <div>
-        <div style="font-weight:700">ResultBoard</div>
-        <div class="small">Custom results board — your content only</div>
-      </div>
-    </div>
-    <nav>
-      <a href="#markets">Markets</a>
-      <a href="#admin">Admin</a>
-    </nav>
-  </header>
-
-  <div class="grid">
-    <main>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <strong>Live results</strong>
-            <div class="small">Updated from your admin</div>
-          </div>
-          <div>
-            <button class="btn" onclick="simulateLive()">Simulate update</button>
-          </div>
-        </div>
-
-        <div id="ticker" class="ticker" style="margin-top:12px">
-          <!-- ticker items inserted here -->
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">RB</div>
+        <div>
+          <div style="font-weight:800">ResultBoard</div>
+          <div class="small">DPBOSS-style results board — add your markets via Admin</div>
         </div>
       </div>
+      <nav>
+        <a href="#" id="openAdminBtn">Admin</a>
+        <a href="#" id="importBtn">Import</a>
+        <a href="#" id="exportBtn">Export</a>
+      </nav>
+    </header>
 
-      <section id="markets" style="margin-top:12px">
+    <div class="grid">
+      <main>
         <div class="card">
-          <h3>Markets</h3>
-          <div id="marketsList" style="margin-top:10px">
-            <!-- market list -->
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <strong>Live results</strong>
+              <div class="small">Updated from your Admin (client-side)</div>
+            </div>
+            <div class="controls">
+              <button class="btn" onclick="autoRefreshToggle()" id="refreshBtn">Auto-refresh: OFF</button>
+              <button class="btn-ghost" onclick="loadSample()">Load sample data</button>
+            </div>
+          </div>
+
+          <div id="ticker" class="ticker" style="margin-top:12px"></div>
+
+          <div class="markets-list" id="marketsList"></div>
+        </div>
+      </main>
+
+      <aside class="aside">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <strong>Quick actions</strong>
+              <div class="small">Manage markets & export</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <button class="btn" id="openAdminBtn2">Open Admin</button>
+          </div>
+
+          <div style="margin-top:16px" class="card">
+            <strong>About</strong>
+            <div class="small" style="margin-top:8px">Original template — you must add your own market names and results. Use Admin to manage unlimited markets.</div>
+          </div>
+
+          <div style="margin-top:12px" class="card">
+            <strong>Export / Import</strong>
+            <div class="small" style="margin-top:8px">Use the Export button in the top nav to copy JSON, or Import to paste JSON to restore.</div>
           </div>
         </div>
-      </section>
+      </aside>
+    </div>
 
-    </main>
-
-    <aside class="aside card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Quick actions</strong><div class="small">WhatsApp & contact</div></div>
-      </div>
-
-      <div style="margin-top:12px">
-        <button class="btn" onclick="window.open('https://wa.me/9999999999','_blank')">Join WhatsApp</button>
-      </div>
-
-      <div class="details card" style="margin-top:12px;padding:10px">
-        <strong>Contact</strong>
-        <div class="small" style="margin-top:6px">Email: support@example.com</div>
-      </div>
-
-      <div class="details card" style="margin-top:12px;padding:10px">
-        <strong>About this template</strong>
-        <div class="small" style="margin-top:6px">Original template — do not copy other sites' content verbatim.</div>
-      </div>
-    </aside>
+    <footer>© <span id="yr"></span> ResultBoard — DPBOSS-style template (legal & original)</footer>
   </div>
 
-  <section id="admin" style="margin-top:14px">
-    <div class="card">
-      <h3>Admin / Data editor (client-only)</h3>
-      <div class="small">Edit the JSON below and click "Apply data". This is a static demo — use a small backend or Git-based workflow for production updates.</div>
+  <!-- Admin Modal -->
+  <div id="adminModal" class="modal" style="display:none">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Admin Panel</h3>
+        <div><button class="btn-ghost" onclick="closeAdmin()">Close</button></div>
+      </div>
 
-      <pre id="jsonEditor" class="jsoneditor"></pre>
-      <div style="margin-top:10px;display:flex;gap:8px">
-        <button class="btn" onclick="applyJSON()">Apply data</button>
-        <button style="background:#244; color:#9fb; border:none;padding:8px 10px;border-radius:8px" onclick="downloadJSON()">Download JSON</button>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <label class="small">Admin password:</label>
+        <input id="adminPassInput" type="password" placeholder="Enter password to unlock" />
+        <button class="btn" onclick="unlockAdmin()">Unlock</button>
+      </div>
+
+      <div id="adminContent" style="display:none;margin-top:12px">
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="openAddForm()">Add Market</button>
+          <button class="btn-ghost" onclick="downloadJSON()">Download JSON</button>
+          <button class="btn-ghost" onclick="clearAll()">Clear all</button>
+        </div>
+
+        <div id="formArea" style="margin-top:12px"></div>
+
+        <h4 style="margin-top:12px">All Markets</h4>
+        <div id="adminList" style="margin-top:8px"></div>
+
+        <h4 style="margin-top:12px">Import JSON</h4>
+        <textarea id="importArea" style="width:100%;height:120px;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="applyImport()">Apply Import</button><button class="btn-ghost" onclick="sampleImport()">Paste sample</button></div>
+
       </div>
     </div>
-  </section>
-
-  <footer>© <span id="yr"></span> ResultBoard — built from original template</footer>
-</div>
+  </div>
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  // placeholder dataset (DO NOT copy any third-party content)
-  let DATA = {
-    "ticker":["Site live — replace with your data","New market added","Use admin to edit"],
-    "markets":[
-      {"id":"m1","name":"City Market A","time":"11:30 AM","jodi":"123 - 45 - 678","panel":"Panel A"},
-      {"id":"m2","name":"City Market B","time":"02:00 PM","jodi":"234 - 56 - 789","panel":"Panel B"},
-      {"id":"m3","name":"City Market C","time":"06:30 PM","jodi":"345 - 67 - 890","panel":"Panel C"}
-    ],
-    "contact":{"whatsapp":"https://wa.me/9999999999","email":"support@example.com"}
-  };
+  // Data stored in localStorage key
+  const STORAGE_KEY = 'dpb_style1_data_v1';
+  const ADMIN_PASS = 'admin123'; // change this before production if needed
 
-  // render helpers
-  function renderTicker(){
-    const t=document.getElementById('ticker'); t.innerHTML='';
-    DATA.ticker.forEach(x=>{
-      const div=document.createElement('div');
-      div.style.minWidth='220px'; div.style.padding='10px'; div.style.borderRadius='8px'; div.style.background='rgba(255,255,255,0.01)';
-      div.innerHTML=`<div style="font-weight:700">${x.split(' — ')[0]}</div><div class="small">${x}</div>`;
-      t.appendChild(div);
-    });
-  }
+  // Default minimal dataset (empty markets)
+  let DATA = { ticker: [], markets: [] };
 
-  function renderMarkets(){
-    const list=document.getElementById('marketsList'); list.innerHTML='';
-    DATA.markets.forEach(m=>{
-      const el=document.createElement('div'); el.className='market';
-      el.innerHTML=`<div><h4>${m.name}</h4><div class="small">${m.time} • ${m.panel}</div></div>
-                    <div style="text-align:right"><div style="font-weight:700">${m.jodi}</div>
-                    <div style="margin-top:8px"><button class="btn" onclick='openDetails("${m.id}")'>Details</button></div></div>`;
-      list.appendChild(el);
-    });
-  }
+  // Helpers
+  function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
+  function loadData(){ const s = localStorage.getItem(STORAGE_KEY); if(s){ try{ DATA = JSON.parse(s); }catch(e){ console.error('parse error',e); } } renderAll(); }
 
-  function openDetails(id){
-    const m = DATA.markets.find(x=>x.id===id);
-    if(!m) return alert('Not found');
-    alert(`${m.name}\nTime: ${m.time}\nJodi: ${m.jodi}\nPanel: ${m.panel}`);
-  }
+  function renderTicker(){ const t=document.getElementById('ticker'); t.innerHTML=''; DATA.ticker.forEach(item=>{ const el=document.createElement('div'); el.style.minWidth='240px'; el.style.padding='10px'; el.style.borderRadius='8px'; el.style.background='rgba(255,255,255,0.01)'; el.innerHTML=`<div style="font-weight:700">${item.title||'Update'}</div><div class="small">${item.text||''}</div>`; t.appendChild(el); }); }
 
-  function applyJSON(){
-    try{
-      const txt = document.getElementById('jsonEditor').textContent;
-      const parsed = JSON.parse(txt);
-      // simple validation
-      if(!parsed.markets || !Array.isArray(parsed.markets)) return alert('JSON must include "markets" array');
-      DATA = parsed;
-      renderTicker(); renderMarkets();
-      alert('Data applied');
-    }catch(e){ alert('JSON parse error: '+e.message); }
-  }
+  function renderMarkets(){ const root=document.getElementById('marketsList'); root.innerHTML=''; DATA.markets.forEach(m=>{ const row=document.createElement('div'); row.className='market-row'; row.innerHTML = `
+      <div class="market-left">
+        <div class="market-name">${m.name}</div>
+        <div class="market-meta">${m.open} • ${m.close} • ${m.panel_open?('Open: '+m.panel_open):''} ${m.panel_close?(' • Close: '+m.panel_close):''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="result-big">${m.jodi||'--'}</div>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end"><button class="btn-ghost" onclick='openEdit("${m.id}")'>Edit</button><button class="btn" onclick='showDetails("${m.id}")'>Details</button></div>
+      </div>
+    `; root.appendChild(row); }); }
 
-  function downloadJSON(){
-    const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='results.json'; a.click(); URL.revokeObjectURL(url);
-  }
+  function renderAdminList(){ const root=document.getElementById('adminList'); root.innerHTML=''; DATA.markets.forEach(m=>{ const el=document.createElement('div'); el.className='market-row'; el.style.padding='8px'; el.innerHTML = `<div style="flex:1"><strong>${m.name}</strong><div class="small">${m.open} • ${m.close}</div></div><div style="display:flex;gap:8px"><button class="btn-ghost" onclick='openEdit("${m.id}")'>Edit</button><button class="btn" onclick='deleteMarket("${m.id}")'>Delete</button></div>`; root.appendChild(el); }); }
 
-  function simulateLive(){
-    DATA.ticker.unshift('New update at '+new Date().toLocaleTimeString());
-    if(DATA.ticker.length>6) DATA.ticker.pop();
-    renderTicker();
-  }
+  function renderAll(){ renderTicker(); renderMarkets(); renderAdminList(); }
 
-  // initialize editor with sample data
-  document.getElementById('jsonEditor').textContent = JSON.stringify(DATA, null, 2);
-  renderTicker(); renderMarkets();
+  // Utilities
+  function uid(prefix='m'){ return prefix+Math.random().toString(36).slice(2,9); }
+
+  // Admin modal logic
+  const adminModal = document.getElementById('adminModal');
+  function openAdmin(){ adminModal.style.display='flex'; document.getElementById('adminPassInput').value=''; document.getElementById('adminContent').style.display='none'; }
+  function closeAdmin(){ adminModal.style.display='none'; }
+  document.getElementById('openAdminBtn').addEventListener('click',e=>{ e.preventDefault(); openAdmin(); });
+  document.getElementById('openAdminBtn2').addEventListener('click',openAdmin);
+
+  function unlockAdmin(){ const v = document.getElementById('adminPassInput').value; if(v===ADMIN_PASS){ document.getElementById('adminContent').style.display='block'; renderAdminList(); alert('Admin unlocked'); } else { alert('Incorrect password'); } }
+
+  function openAddForm(){ const area=document.getElementById('formArea'); area.innerHTML = `
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="f_name" placeholder="Market name (e.g., Market A)" />
+      <input id="f_open" placeholder="Open time (e.g., 11:30 AM)" />
+      <input id="f_close" placeholder="Close time (e.g., 02:00 PM)" />
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="f_jodi" placeholder="Jodi / Result (e.g., 123 - 45 - 678)" />
+      <input id="f_panel_open" placeholder="Panel Open (optional)" />
+      <input id="f_panel_close" placeholder="Panel Close (optional)" />
+      <button class="btn" onclick="addMarket()">Add</button>
+    </div>
+  `; }
+
+  function addMarket(){ const name=document.getElementById('f_name').value.trim(); if(!name) return alert('Name required'); const m = { id: uid(), name, open: document.getElementById('f_open').value||'--', close: document.getElementById('f_close').value||'--', jodi: document.getElementById('f_jodi').value||'--', panel_open: document.getElementById('f_panel_open').value||'', panel_close: document.getElementById('f_panel_close').value||'' }; DATA.markets.unshift(m); saveData(); renderAll(); document.getElementById('formArea').innerHTML=''; alert('Market added'); }
+
+  function openEdit(id){ const m = DATA.markets.find(x=>x.id===id); if(!m) return; const area=document.getElementById('formArea'); area.innerHTML = `
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="e_name" value="${m.name}" />
+      <input id="e_open" value="${m.open}" />
+      <input id="e_close" value="${m.close}" />
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="e_jodi" value="${m.jodi}" />
+      <input id="e_panel_open" value="${m.panel_open}" />
+      <input id="e_panel_close" value="${m.panel_close}" />
+      <button class="btn" onclick="saveEdit('${m.id}')">Save</button>
+    </div>
+    <div style="margin-top:8px"><button class="btn-ghost" onclick="document.getElementById('formArea').innerHTML=''">Cancel</button></div>
+  `; }
+
+  function saveEdit(id){ const m = DATA.markets.find(x=>x.id===id); if(!m) return; m.name = document.getElementById('e_name').value; m.open = document.getElementById('e_open').value; m.close = document.getElementById('e_close').value; m.jodi = document.getElementById('e_jodi').value; m.panel_open = document.getElementById('e_panel_open').value; m.panel_close = document.getElementById('e_panel_close').value; saveData(); renderAll(); document.getElementById('formArea').innerHTML=''; alert('Saved'); }
+
+  function deleteMarket(id){ if(!confirm('Delete this market?')) return; DATA.markets = DATA.markets.filter(x=>x.id!==id); saveData(); renderAll(); }
+
+  function showDetails(id){ const m = DATA.markets.find(x=>x.id===id); if(!m) return alert('Not found'); alert(`${m.name}\nOpen: ${m.open}\nClose: ${m.close}\nJodi: ${m.jodi}\nPanel Open: ${m.panel_open}\nPanel Close: ${m.panel_close}`); }
+
+  // Import/Export
+  document.getElementById('importBtn').addEventListener('click',e=>{ e.preventDefault(); openAdmin(); document.getElementById('adminPassInput').value = ADMIN_PASS; unlockAdmin(); document.getElementById('importArea').focus(); });
+  document.getElementById('exportBtn').addEventListener('click',e=>{ e.preventDefault(); copyToClipboard(JSON.stringify(DATA, null, 2)); alert('JSON copied to clipboard'); });
+
+  function applyImport(){ try{ const txt = document.getElementById('importArea').value; const parsed = JSON.parse(txt); if(!parsed.markets || !Array.isArray(parsed.markets)) return alert('Invalid format: missing markets array'); DATA = parsed; saveData(); renderAll(); alert('Import applied'); }catch(e){ alert('Parse error: '+e.message); } }
+  function sampleImport(){ const sample = { ticker:[{title:'Site live', text:'Replace with your updates'}], markets:[] }; document.getElementById('importArea').value = JSON.stringify(sample, null, 2); }
+
+  function copyToClipboard(txt){ navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : (prompt('Copy JSON', txt)); }
+
+  function downloadJSON(){ const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='data.json'; a.click(); URL.revokeObjectURL(url); }
+
+  function clearAll(){ if(!confirm('Clear all markets and ticker?')) return; DATA = { ticker:[], markets:[] }; saveData(); renderAll(); }
+
+  function applyImportText(txt){ try{ const p = JSON.parse(txt); if(p.markets) { DATA = p; saveData(); renderAll(); alert('Imported'); } }catch(e){ alert('error'); } }
+
+  // Sample data loader (non-gambling names)
+  function loadSample(){ DATA = { ticker:[{title:'Site live', text:'Replace with your updates'},{title:'New market', text:'Add markets through Admin'}], markets:[{id:uid('m'), name:'Market A', open:'11:30 AM', close:'02:30 PM', jodi:'123 - 45 - 678', panel_open:'345', panel_close:'678'},{id:uid('m'), name:'Market B', open:'02:00 PM', close:'04:00 PM', jodi:'234 - 56 - 789', panel_open:'111', panel_close:'222'},{id:uid('m'), name:'Market C', open:'06:30 PM', close:'08:10 PM', jodi:'345 - 67 - 890', panel_open:'333', panel_close:'444'}] }; saveData(); renderAll(); }
+
+  // Auto refresh
+  let autoRefresh = false; let autoInterval = null;
+  function autoRefreshToggle(){ autoRefresh = !autoRefresh; document.getElementById('refreshBtn').textContent = 'Auto-refresh: '+(autoRefresh? 'ON':'OFF'); if(autoRefresh){ autoInterval = setInterval(()=>{ // rotate ticker to simulate live
+      if(DATA.ticker && DATA.ticker.length){ const x = DATA.ticker.shift(); DATA.ticker.push(x); saveData(); renderTicker(); }
+    }, 5000); } else { clearInterval(autoInterval); } }
+
+  // Initial load
+  loadData();
+
+  // Small utilities wired to window for inline handlers
+  window.openAdmin = openAdmin; window.closeAdmin = closeAdmin; window.unlockAdmin = unlockAdmin; window.openAddForm = openAddForm; window.addMarket = addMarket; window.openEdit = openEdit; window.saveEdit = saveEdit; window.deleteMarket = deleteMarket; window.showDetails = showDetails; window.applyImport = applyImport; window.sampleImport = sampleImport; window.downloadJSON = downloadJSON; window.loadSample = loadSample; window.clearAll = clearAll; window.applyImportText = applyImportText; window.autoRefreshToggle = autoRefreshToggle; window.uid = uid;
 
 </script>
 </body>
